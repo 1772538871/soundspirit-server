@@ -42,17 +42,20 @@ public class ChatController {
      */
     @GetMapping("/sessions/{sessionId}/messages")
     public Result<List<ChatMessage>> getMessages(
+            @RequestAttribute("userId") Long userId,
             @PathVariable Long sessionId,
             @RequestParam(defaultValue = "50") int limit) {
-        return Result.success(chatService.getSessionMessages(sessionId, limit));
+        return Result.success(chatService.getSessionMessages(userId, sessionId, limit));
     }
 
     /**
      * 删除会话
      */
     @DeleteMapping("/sessions/{sessionId}")
-    public Result<Void> deleteSession(@PathVariable Long sessionId) {
-        chatService.deleteSession(sessionId);
+    public Result<Void> deleteSession(
+            @RequestAttribute("userId") Long userId,
+            @PathVariable Long sessionId) {
+        chatService.deleteSession(userId, sessionId);
         return Result.success();
     }
 }

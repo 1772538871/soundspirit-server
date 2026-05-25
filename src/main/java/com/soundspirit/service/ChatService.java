@@ -1,6 +1,7 @@
 package com.soundspirit.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.soundspirit.common.BusinessException;
 import com.soundspirit.entity.ChatMessage;
 import com.soundspirit.entity.ChatSession;
 import com.soundspirit.repository.ChatMessageMapper;
@@ -51,15 +52,19 @@ public class ChatService {
         );
     }
 
+    private static final int MAX_MESSAGE_LIMIT = 200;
+
     /**
      * 获取会话的消息历史
      */
-    public List<ChatMessage> getSessionMessages(Long sessionId, int limit) {
+    public List<ChatMessage> getSessionMessages(Long userId, Long sessionId, int limit) {
+        verifySessionOwnership(userId, sessionId);
+        int safeLimit = Math.max(1, Math.min(limit, MAX_MESSAGE_LIMIT));
         return messageMapper.selectList(
                 new LambdaQueryWrapper<ChatMessage>()
                         .eq(ChatMessage::getSessionId, sessionId)
                         .orderByDesc(ChatMessage::getCreateTime)
-                        .last("LIMIT " + limit)
+                        .last("LIMIT " + safeLimit)
         );
     }
 
@@ -100,11 +105,19 @@ public class ChatService {
     /**
      * 删除会话
      */
-    public void deleteSession(Long sessionId) {
+    public void deleteSession(Long userId, Long sessionId) {
+        verifySessionOwnership(userId, sessionId);
         ChatSession session = sessionMapper.selectById(sessionId);
         if (session != null) {
             session.setStatus(0);
             sessionMapper.updateById(session);
+        }
+    }
+
+    private void verifySessionOwnership(Long userId, Long sessionId) {
+        ChatSession session = sessionMapper.selectById(sessionId);
+        if (session == null || !session.getUserId().equals(userId)) {
+            throw new BusinessException(403, "无权访问该会话");
         }
     }
 }

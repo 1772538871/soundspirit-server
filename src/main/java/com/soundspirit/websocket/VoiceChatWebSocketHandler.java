@@ -57,7 +57,7 @@ public class VoiceChatWebSocketHandler extends TextWebSocketHandler {
             }
         } catch (Exception e) {
             log.error("处理WebSocket消息失败", e);
-            sendError(session, "消息处理失败: " + e.getMessage());
+            sendError(session, "消息处理失败，请稍后重试");
         }
     }
 
