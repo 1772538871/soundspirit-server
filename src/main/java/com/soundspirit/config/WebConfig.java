@@ -4,6 +4,7 @@ import com.soundspirit.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -19,19 +20,29 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final JwtUtil jwtUtil;
 
+    @Value("${app.cors.allowed-origins:}")
+    private String allowedOrigins;
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins("*")
+        var mapping = registry.addMapping("/**")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*");
+                .allowedHeaders("*")
+                .maxAge(3600);
+
+        if (allowedOrigins == null || allowedOrigins.isBlank()) {
+            mapping.allowedOrigins("*");
+        } else {
+            mapping.allowedOrigins(allowedOrigins.split(","))
+                    .allowCredentials(true);
+        }
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new JwtInterceptor(jwtUtil))
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/auth/**", "/api/characters/**");
+                .excludePathPatterns("/api/auth/guest", "/api/auth/wechat", "/api/characters/**");
     }
 
     /**

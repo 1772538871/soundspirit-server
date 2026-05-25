@@ -1,6 +1,7 @@
 package com.soundspirit.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -15,14 +16,17 @@ public class User {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @JsonIgnore
     private String openId;
 
+    @JsonIgnore
     private String unionId;
 
     private String nickname;
 
     private String avatar;
 
+    @JsonIgnore
     private String phone;
 
     /**
