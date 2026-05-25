@@ -1,6 +1,7 @@
 package com.soundspirit.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.soundspirit.common.BusinessException;
 import com.soundspirit.entity.ChatMessage;
 import com.soundspirit.entity.ChatSession;
 import com.soundspirit.repository.ChatMessageMapper;
@@ -68,27 +69,23 @@ public class ChatService {
      */
     @Transactional
     public void saveMessage(Long sessionId, String userText, String assistantText) {
-        // 保存用户消息
         ChatMessage userMsg = new ChatMessage();
         userMsg.setSessionId(sessionId);
         userMsg.setRole("user");
         userMsg.setContent(userText);
         messageMapper.insert(userMsg);
 
-        // 保存AI回复
         ChatMessage assistantMsg = new ChatMessage();
         assistantMsg.setSessionId(sessionId);
         assistantMsg.setRole("assistant");
         assistantMsg.setContent(assistantText);
         messageMapper.insert(assistantMsg);
 
-        // 更新会话信息
         ChatSession session = sessionMapper.selectById(sessionId);
         if (session != null) {
             session.setMessageCount(session.getMessageCount() + 2);
             session.setLastMessageTime(LocalDateTime.now());
 
-            // 使用第一条用户消息作为标题
             if (session.getMessageCount() == 2) {
                 String title = userText.length() > 20 ? userText.substring(0, 20) + "..." : userText;
                 session.setTitle(title);
@@ -98,13 +95,17 @@ public class ChatService {
     }
 
     /**
-     * 删除会话
+     * 删除会话（带归属校验）
      */
-    public void deleteSession(Long sessionId) {
+    public void deleteSession(Long userId, Long sessionId) {
         ChatSession session = sessionMapper.selectById(sessionId);
-        if (session != null) {
-            session.setStatus(0);
-            sessionMapper.updateById(session);
+        if (session == null) {
+            throw new BusinessException(404, "会话不存在");
         }
+        if (!session.getUserId().equals(userId)) {
+            throw new BusinessException(403, "无权操作此会话");
+        }
+        session.setStatus(0);
+        sessionMapper.updateById(session);
     }
 }

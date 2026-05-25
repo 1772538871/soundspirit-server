@@ -1,5 +1,6 @@
 package com.soundspirit.controller;
 
+import com.soundspirit.common.BusinessException;
 import com.soundspirit.common.Result;
 import com.soundspirit.entity.AiCharacter;
 import com.soundspirit.service.CharacterService;
@@ -31,7 +32,11 @@ public class CharacterController {
      */
     @GetMapping("/{id}")
     public Result<AiCharacter> getCharacter(@PathVariable Long id) {
-        return Result.success(characterService.getById(id));
+        AiCharacter character = characterService.getById(id);
+        if (character == null) {
+            throw new BusinessException(404, "角色不存在");
+        }
+        return Result.success(character);
     }
 
     /**
