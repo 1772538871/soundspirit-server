@@ -1,10 +1,13 @@
 package com.soundspirit.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.soundspirit.common.Result;
 import com.soundspirit.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -18,6 +21,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final JwtUtil jwtUtil;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
@@ -29,7 +33,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new JwtInterceptor(jwtUtil))
+        registry.addInterceptor(new JwtInterceptor(jwtUtil, objectMapper))
                 .addPathPatterns("/api/**")
                 .excludePathPatterns("/api/auth/**", "/api/characters/**");
     }
@@ -41,10 +45,10 @@ public class WebConfig implements WebMvcConfigurer {
     static class JwtInterceptor implements HandlerInterceptor {
 
         private final JwtUtil jwtUtil;
+        private final ObjectMapper objectMapper;
 
         @Override
-        public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-            // OPTIONS请求放行
+        public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
             if ("OPTIONS".equals(request.getMethod())) {
                 return true;
             }
@@ -59,7 +63,10 @@ public class WebConfig implements WebMvcConfigurer {
                 }
             }
 
-            response.setStatus(401);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write(objectMapper.writeValueAsString(Result.error(401, "未授权，请先登录")));
             return false;
         }
     }
